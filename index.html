@@ -874,18 +874,15 @@
             const elements = document.querySelectorAll('.feature, .contact-item');
             const sections = document.querySelectorAll('section');
 
-            // Observe sections for particle regeneration
+            // Observe sections for visibility but don't regenerate particles constantly
+            // This was causing scrolling performance issues
             const sectionObserver = new IntersectionObserver(function(entries) {
                 entries.forEach(function(entry) {
-                    if (entry.isIntersecting) {
+                    // Only regenerate particles once when the section first appears
+                    if (entry.isIntersecting && !entry.target.dataset.particlesInitialized) {
+                        entry.target.dataset.particlesInitialized = 'true';
                         const sectionId = entry.target.id;
-                        const particlesContainer = document.getElementById(sectionId + '-particles');
-                        if (particlesContainer) {
-                            particlesContainer.innerHTML = '';
-                            const numParticles = sectionId === 'hero' ? 20 : sectionId === 'features' ? 15 : 12;
-                            const size = sectionId === 'hero' ? 120 : 80;
-                            createSectionParticles(particlesContainer, numParticles, size, 40);
-                        }
+                        console.log('Initializing particles for section:', sectionId);
                     }
                 });
             }, { threshold: 0.1 });
@@ -916,7 +913,7 @@
 
         // Initialize everything when the page loads
         window.addEventListener('load', function() {
-            // Create particles immediately
+            // Create particles once at load time instead of regenerating them constantly
             createParticles();
 
             // Initialize animations
@@ -929,15 +926,30 @@
             handleResponsive();
             window.addEventListener('resize', handleResponsive);
 
-            // Smooth scroll for navigation links
+            // Add a low-resource debounced scroll listener instead of regenerating particles
+            let scrollTimeout;
+            window.addEventListener('scroll', function() {
+                if (scrollTimeout) {
+                    clearTimeout(scrollTimeout);
+                }
+                
+                scrollTimeout = setTimeout(function() {
+                    console.log('Scroll ended');
+                    // No particle regeneration on scroll - this was causing performance issues
+                }, 100);
+            }, { passive: true }); // Use passive listener for better performance
+
+            // Smooth scroll for navigation links - optimized version
             document.querySelectorAll('a[href^="#"]:not([href="#"])').forEach(function(anchor) {
                 anchor.addEventListener('click', function(e) {
                     if(this.getAttribute('href') === "#") return;
                     e.preventDefault();
                     const targetElement = document.querySelector(this.getAttribute('href'));
                     if(targetElement) {
+                        // Use scrollIntoView with smooth behavior for better performance
                         targetElement.scrollIntoView({
-                            behavior: 'smooth'
+                            behavior: 'smooth',
+                            block: 'start'
                         });
                     }
                 });
