@@ -810,27 +810,48 @@
             }
         })();
         
-        // Create a single set of particles for the whole page
+        // Create particles for each section
         function createParticles() {
+            // Create particles for main background
             var particlesContainer = document.getElementById('particles');
-            if (!particlesContainer) return;
-            particlesContainer.innerHTML = '';
-            // You can adjust the number and color of particles here
-            var numParticles = 40;
-            var rootStyle = getComputedStyle(document.documentElement);
-            var particleColor = rootStyle.getPropertyValue('--primary');
-            var shadowColor = particleColor;
-            for (var i = 0; i < numParticles; i++) {
-                var particle = document.createElement('div');
+            if (particlesContainer) {
+                particlesContainer.innerHTML = '';
+                createSectionParticles(particlesContainer, 40, 120, 80);
+            }
+
+            // Create particles for each section
+            ['hero', 'features', 'contact'].forEach(function(section) {
+                const sectionContainer = document.getElementById(section + '-particles');
+                if (sectionContainer) {
+                    sectionContainer.innerHTML = '';
+                    const numParticles = section === 'hero' ? 20 : section === 'features' ? 15 : 12;
+                    const size = section === 'hero' ? 120 : 80;
+                    createSectionParticles(sectionContainer, numParticles, size, 40);
+                }
+            });
+        }
+
+        // Helper function to create particles for a specific container
+        function createSectionParticles(container, numParticles, maxSize, minSize) {
+            const rootStyle = getComputedStyle(document.documentElement);
+            const particleColor = rootStyle.getPropertyValue('--primary');
+            const shadowColor = particleColor;
+
+            for (let i = 0; i < numParticles; i++) {
+                const particle = document.createElement('div');
                 particle.classList.add('particle');
+
                 // Random position
-                var posX = Math.random() * 100;
-                var posY = Math.random() * 100;
+                const posX = Math.random() * 100;
+                const posY = Math.random() * 100;
+
                 // Random size
-                var size = Math.random() * 120 + 80;
+                const size = Math.random() * (maxSize - minSize) + minSize;
+
                 // Random animation delay
-                var delay = Math.random() * 8;
-                // Apply styles directly
+                const delay = Math.random() * 8;
+
+                // Apply styles
                 particle.style.position = 'absolute';
                 particle.style.left = posX + '%';
                 particle.style.top = posY + '%';
@@ -843,21 +864,44 @@
                 particle.style.zIndex = '0';
                 particle.style.animation = 'float ' + (8 + delay) + 's infinite ease-in-out';
                 particle.style.animationDelay = delay + 's';
-                particlesContainer.appendChild(particle);
+
+                container.appendChild(particle);
             }
         }
-        
+
         // Animate on scroll
         function animateOnScroll() {
             const elements = document.querySelectorAll('.feature, .contact-item');
-            // Only animate fade-in for content elements, no particle regeneration
-            elements.forEach(element => {
+            const sections = document.querySelectorAll('section');
+
+            // Observe sections for particle regeneration
+            const sectionObserver = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        const sectionId = entry.target.id;
+                        const particlesContainer = document.getElementById(sectionId + '-particles');
+                        if (particlesContainer) {
+                            particlesContainer.innerHTML = '';
+                            const numParticles = sectionId === 'hero' ? 20 : sectionId === 'features' ? 15 : 12;
+                            const size = sectionId === 'hero' ? 120 : 80;
+                            createSectionParticles(particlesContainer, numParticles, size, 40);
+                        }
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            sections.forEach(function(section) {
+                sectionObserver.observe(section);
+            });
+
+            // Animate content elements
+            elements.forEach(function(element) {
                 element.style.opacity = 0;
                 element.style.transform = 'translateY(20px)';
                 element.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-                // Simple fade-in on scroll
-                const observer = new IntersectionObserver((entries, obs) => {
-                    entries.forEach(entry => {
+
+                const observer = new IntersectionObserver(function(entries, obs) {
+                    entries.forEach(function(entry) {
                         if (entry.isIntersecting) {
                             entry.target.style.opacity = 1;
                             entry.target.style.transform = 'translateY(0)';
@@ -865,27 +909,29 @@
                         }
                     });
                 }, { threshold: 0.1 });
+
                 observer.observe(element);
             });
         }
-        
+
         // Initialize everything when the page loads
-        window.addEventListener('load', () => {
-            // Debug CSS variables
-            console.log('Primary color:', getComputedStyle(document.documentElement).getPropertyValue('--primary'));
-            // Create a single set of particles for the whole page
-            setTimeout(() => {
-                createParticles();
-            }, 100);
+        window.addEventListener('load', function() {
+            // Create particles immediately
+            createParticles();
+
+            // Initialize animations
             animateOnScroll();
+
             // Make sure logo is properly displayed
             ensureLogoDisplay();
+
             // Handle window resize for responsive behavior
             handleResponsive();
             window.addEventListener('resize', handleResponsive);
+
             // Smooth scroll for navigation links
-            document.querySelectorAll('a[href^="#"]:not([href="#"])').forEach(anchor => {
-                anchor.addEventListener('click', function (e) {
+            document.querySelectorAll('a[href^="#"]:not([href="#"])').forEach(function(anchor) {
+                anchor.addEventListener('click', function(e) {
                     if(this.getAttribute('href') === "#") return;
                     e.preventDefault();
                     const targetElement = document.querySelector(this.getAttribute('href'));
